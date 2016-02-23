@@ -1,6 +1,9 @@
 <?php
+
 class Transactions {
-	public static function get($count=false,$page=false,$per_page=false,$c_currency=false,$currency=false,$user=false,$start_date=false,$type=false,$order_by=false,$order_desc=false,$public_api_all=false,$dont_paginate=false) {
+	public static function get($count=false,$page=false,$per_page=false,$c_currency=false,$currency=false,$user=false,$start_date=false,$type=false,$order_by=false,$order_desc=false,
+        $public_api_all=false,$dont_paginate=false, $affiliates=false) { 
+
 		global $CFG;
 		
 		if ($user && !(User::$info['id'] > 0))
@@ -84,9 +87,22 @@ class Transactions {
 		$currency_abbr2 .= ' END)';
 		$currency_abbr3 .= ' END)';
 		
-		if (!$count && !$public_api_all)
-			$sql = "SELECT transactions.id,transactions.c_currency, transactions.date,transactions.site_user,transactions.site_user1,transactions.btc,transactions.currency,transactions.currency1,transactions.btc_price,transactions.orig_btc_price,transactions.fiat, (UNIX_TIMESTAMP(transactions.date) - ({$CFG->timezone_offset})) AS time_since ".(($user > 0) ? ",IF(transactions.site_user = $user,transaction_types.name_{$CFG->language},transaction_types1.name_{$CFG->language}) AS type, IF(transactions.site_user = $user,transactions.fee,transactions.fee1) AS fee, IF(transactions.site_user = $user,transactions.btc_net,transactions.btc_net1) AS btc_net, IF(transactions.site_user1 = $user,transactions.orig_btc_price,transactions.btc_price) AS fiat_price, IF(transactions.site_user = $user,transactions.currency,transactions.currency1) AS currency" : ", $price_str AS btc_price, LOWER(transaction_types1.name_en) AS maker_type").", UNIX_TIMESTAMP(transactions.date) AS datestamp ".(($order_by == 'usd_price') ? ', ROUND(('.$usd_str.' * transactions.btc_price),2) AS usd_price' : '').(($order_by == 'usd_amount') ? ', ROUND(('.$usd_str.' * transactions.fiat),2) AS usd_amount' : '').(count($cryptos) > 0 && $user ? ', IF(IF(transactions.site_user = '.$user.',transactions.currency,transactions.currency1) IN ('.implode(',',$cryptos).'),"Y","N") AS is_crypto' : '');
-		elseif ($public_api_all && $user)
+		if (!$count && !$public_api_all) {
+
+			$sql = "
+                #ln 92 NOT count & NOT public_api_all 
+                SELECT transactions.id,transactions.c_currency, transactions.date,transactions.site_user,transactions.site_user1,
+                transactions.btc,transactions.currency,transactions.currency1,transactions.btc_price,transactions.orig_btc_price, 
+                transactions.fiat, (UNIX_TIMESTAMP(transactions.date) - ({$CFG->timezone_offset})) AS time_since ".(($user > 0) ? ",
+                IF(transactions.site_user = $user,transaction_types.name_{$CFG->language},transaction_types1.name_{$CFG->language}) AS type,
+                IF(transactions.site_user = $user,transactions.fee,transactions.fee1) AS fee, IF(transactions.site_user = $user,transactions.btc_net,transactions.btc_net1) AS btc_net,
+                IF(transactions.site_user1 = $user,transactions.orig_btc_price,transactions.btc_price) AS fiat_price,
+                IF(transactions.site_user = $user,transactions.currency,transactions.currency1) AS currency" : ", $price_str AS btc_price, LOWER(transaction_types1.name_en) AS maker_type").
+                ", UNIX_TIMESTAMP(transactions.date) AS datestamp ".(($order_by == 'usd_price') ? ', ROUND(('.$usd_str.' * transactions.btc_price),2) AS usd_price' : '').
+                (($order_by == 'usd_amount') ? ',  ROUND(('.$usd_str.' * transactions.fiat),2) AS usd_amount' : '').
+                (count($cryptos) > 0 && $user ? ', IF(IF(transactions.site_user = '.$user.
+                ',transactions.currency,transactions.currency1) IN ('.implode(',',$cryptos).'),"Y","N") AS is_crypto' : '');
+		} elseif ($public_api_all && $user)
 			$sql = "SELECT transactions.id AS id, transactions.date AS date, UNIX_TIMESTAMP(transactions.date) AS `timestamp`, transactions.btc AS btc, LOWER(IF(transactions.site_user = $user,transaction_types.name_{$CFG->language},transaction_types1.name_{$CFG->language})) AS side, IF(transactions.site_user1 = $user,transactions.orig_btc_price,transactions.btc_price) AS price, ROUND((IF(transactions.site_user1 = $user,transactions.orig_btc_price,transactions.btc_price) * IF(transactions.site_user = $user,transactions.btc_net,transactions.btc_net1)),2) AS amount, ROUND((IF(transactions.site_user1 = $user,transactions.orig_btc_price,transactions.btc_price) * IF(transactions.site_user = $user,transactions.fee,transactions.fee1)),2) AS fee, $currency_abbr AS currency ";
 		elseif ($public_api_all && !$user && $currency)
 			$sql = "SELECT transactions.id AS id, transactions.date AS date, UNIX_TIMESTAMP(transactions.date) AS `timestamp`, transactions.btc AS btc, LOWER(transaction_types1.name_{$CFG->language}) AS maker_type, ROUND($price_str,8) AS price, ROUND($amount_str,8) AS amount, IF(transactions.currency != {$currency_info['id']} AND transactions.currency1 != {$currency_info['id']},$currency_abbr2,'{$currency_info['currency']}') AS currency, $currency_abbr3 AS market ";
@@ -96,11 +112,13 @@ class Transactions {
 		else
 			$sql = "SELECT COUNT(transactions.id) AS total ";
 			
-		$sql .= ' 
-		FROM transactions
-		LEFT JOIN transaction_types ON (transaction_types.id = transactions.transaction_type)
-		LEFT JOIN transaction_types transaction_types1 ON (transaction_types1.id = transactions.transaction_type1)
-		WHERE 1 ';
+        
+	    $sql .= ' 
+	    FROM transactions
+	    LEFT JOIN transaction_types ON (transaction_types.id = transactions.transaction_type)
+	    LEFT JOIN transaction_types transaction_types1 ON (transaction_types1.id = transactions.transaction_type1)
+	    WHERE 1 ';
+        
 			
 		if ($c_currency > 0)
 			$sql .= ' AND transactions.c_currency = '.$c_currency.' ';
@@ -115,10 +133,23 @@ class Transactions {
 		if ($currency && $user)
 			$sql .= " AND IF(transactions.site_user = $user,transactions.currency = {$currency_info['id']},transactions.currency1 = {$currency_info['id']}) ";
 
+
+        // get transactions from his affiliates
+        if($affiliates){
+            $affiliates = Affiliates::getAffiliates();
+            $affiliates = implode(', ',$affiliates);
+            $sql.="\n #get transactions from his affiliates \n AND ( (site_user IN($affiliates)) OR (site_user1 IN($affiliates)) ) \n ";
+            log_str($sql);
+        }
+
+
 		if ($per_page > 0 && !$count && !$dont_paginate)
 			$sql .= " ORDER BY $order_by $order_desc LIMIT $r1,$per_page1 ";
 		if (!$count && $dont_paginate)
 			$sql .= " ORDER BY transactions.id DESC ";
+
+
+    //   log_str($sql);
 
 		$result = db_query_array($sql);
 		if ($CFG->memcached) {
@@ -363,4 +394,22 @@ class Transactions {
 		
 		return $result;
 	}
+
+
+    // build get params as array for get method
+    public static function getFiltersFromArray($filters){
+
+        $filters['per_pag'] = isset($filters['per_pag']) ?  $filters['per_pag'] : 30;
+        $filters['user']    = isset($filters['user'])    ?  $filters['user']    : 1;
+        $filters['affiliates'] = 1;
+
+        $fields_needed = explode(' ','count page per_page c-Currency currency user start_date type order_by order_desc public_api_all dont_paginate affiliates');
+
+        foreach($fields_needes as $f){
+            $filters[ $f ] = isset($filters[$f]) ? $filters[$f] : false; 
+        }
+
+        return $filters;
+    }
+
 }

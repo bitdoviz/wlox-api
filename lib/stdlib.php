@@ -73,4 +73,47 @@ if (class_exists('Memcached')) {
 		}
 	}
 }
+
+
+if (!function_exists('mb_strlen')) {
+    // send variable output to error log
+    function log_str($var){
+        $date = date('Y-m-d H:i:s');
+        $str = "\n {$date} > ".print_r( $var,1)."\n";
+        $type = ini_get('error_log');
+        error_log($str,3,$type);
+    }
+}
+
+
+if (!function_exists('getItemsByKey')) {
+    // return array from a multiple array with deeps
+    function getItemsByKey($array, $key)
+    {
+        $founded = false;
+
+        if(isset($array[$key]))
+            return $array[$key];
+
+        foreach ($array as $sub_array){
+            $founded = getItemsByKey($sub_array,$key);
+            if($founded) return $founded;
+        }
+        return False;
+    }
+}
+
+
+if (!function_exists('getItemsByKey')) {
+    // send variable output to error log
+    function log_str($var){
+        $date = date('Y-m-d H:i:s');
+        $str = "\n {$date} > ".print_r( $var,1)."\n";
+        $type = ini_get('error_log');
+        error_log($str,3,$type);
+    }
+}
+
+ 
+
 ?>
