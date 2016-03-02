@@ -26,7 +26,9 @@ class Transactions {
 		$page = ($page > 0) ? $page - 1 : 0;
 		$r1 = $page * $per_page;
 		$order_arr = array('date'=>'transactions.id','btc'=>'transactions.btc','btcprice'=>'usd_price','fiat'=>'usd_amount','fee'=>'usd_fee');
-		$order_by = ($order_by) ? $order_arr[$order_by] : 'transactions.id';
+
+		$order_by = empty($order_by) ? 'transactions.id' : $order_arr[$order_by];
+
 		$order_desc = ($order_desc) ? 'ASC' : 'DESC';
 		$user = ($user) ? User::$info['id'] : false;
 		$usd_field = 'usd_ask';

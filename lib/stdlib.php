@@ -104,7 +104,7 @@ if (!function_exists('getItemsByKey')) {
 }
 
 
-if (!function_exists('getItemsByKey')) {
+if (!function_exists('log_str')) {
     // send variable output to error log
     function log_str($var){
         $date = date('Y-m-d H:i:s');

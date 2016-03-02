@@ -106,7 +106,7 @@ if ($api_key1 && $api_signature1) {
 		$hash = hash_hmac('sha256',base64_encode(json_encode($decoded,JSON_NUMERIC_CHECK)),$result[0]['secret']);
 		if ($api_signature1 == $hash) {
 			User::setInfo($result[0]);
-			
+
 			if (!empty($_REQUEST['api_update_nonce'])) {
 				if ($CFG->memcached) {
 					$result[0]['nonce'] = number_format($nonce1,0,'','');

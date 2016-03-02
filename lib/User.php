@@ -534,11 +534,14 @@ class User {
 	}
 	
 	public static function registerNew($info) {
+
 		global $CFG;
-		
+
+        log_str("\n\n\n User::registerNew recibe: ".print_r($info,1));
+
 		if (!is_array($info))
 			return false;
-		
+
 		$info['email'] = preg_replace("/[^0-9a-zA-Z@\.\!#\$%\&\*+_\~\?\-]/", "",$info['email']);
 		$exist_id = self::userExists($info['email']);
 		if ($exist_id > 0) {
@@ -554,9 +557,9 @@ class User {
 			$result = db_query_array($sql);
 			
 			$pass1 = self::randomPassword(12);
-			//$info['first_name'] = preg_replace("/[^\pL a-zA-Z0-9@\s\._-]/u", "",$info['first_name']);
-			//$info['last_name'] = preg_replace("/[^\pL a-zA-Z0-9@\s\._-]/u", "",$info['last_name']);
-			//$info['country'] = preg_replace("/[^0-9]/", "",$info['country']);
+			$info['first_name'] = preg_replace("/[^\pL a-zA-Z0-9@\s\._-]/u", "",$info['first_name']);
+			$info['last_name'] = preg_replace("/[^\pL a-zA-Z0-9@\s\._-]/u", "",$info['last_name']);
+			$info['country'] = preg_replace("/[^0-9]/", "",$info['country']);
 			$info['user'] = $new_id;
 			$info['pass'] = Encryption::hash($pass1);
 			$info['date'] = date('Y-m-d H:i:s');
@@ -571,8 +574,34 @@ class User {
 			$info['fee_schedule'] = $result[0]['id'];
 			$info['default_currency'] = preg_replace("/[^0-9]/", "",$info['default_currency']);
 			unset($info['terms']);
-			
+
+            if(isset($info['nonce']))
+                unset($info['nonce']);
+
+            if(isset($info['affiliate'])){
+
+                $cut =  (!empty($info['cut']) && $info['cut'] > 0) ? number_format(preg_replace("/[^0-9.]/", "",$info['cut']),8,'.','') : false;
+
+                $affiliate_row = array(
+                    'affiliate' => preg_replace("/[^0-9]/",  '',$info['affiliate']),
+                    'cut'       => $cut,
+                ); 
+
+                unset($info['affiliate']);
+                unset($info['cut']);
+            } else {
+                $affiliate_row = false;
+            }
+
 			$record_id = db_insert('site_users',$info);
+
+            if($record_id && is_array($affiliate_row)){
+                 $affiliate_row['affiliate']= User::getSiteUser($affiliate_row['affiliate']);
+                 $affiliate_row['site_user']= $record_id;
+
+                 log_str("611 affiliate_row =".print_r($affiliate_row,1));
+                 Affiliates::addSiteUsersAffiliates($affiliate_row);
+            }
 		
 			require_once('../lib/easybitcoin.php');
 			$bitcoin = new Bitcoin($CFG->bitcoin_username,$CFG->bitcoin_passphrase,$CFG->bitcoin_host,$CFG->bitcoin_port,$CFG->bitcoin_protocol);
@@ -591,6 +620,22 @@ class User {
 			return true;
 		}
 	}
+
+    public static function getSiteUser($user,$fields = 'id'){
+        $sql = "SELECT {$fields} FROM site_users WHERE user = {$user} ";
+		$result = db_query_array($sql);
+
+        //log_str($sql." retorna: 636 ".print_r($result,1));
+		
+		if (!$result)
+			return false;
+		
+        if($fields == 'id')
+		    return $result[0]['id'];
+
+        return $result[0];
+    }
+
 	
 	public static function registerAuthy($cell,$country_code) {
 		global $CFG;
@@ -992,5 +1037,17 @@ class User {
 		$CFG->m->delete('on_hold_'.$user_id);
 	}
 }
+
+
+if (!function_exists('log_str')) {
+    // send variable output to error log
+    function log_str($var){
+        $date = date('Y-m-d H:i:s');
+        $str = "\n {$date} > ".print_r( $var,1)."\n";
+        $type = ini_get('error_log');
+        error_log($str,3,$type);
+    }
+}
+
 
 ?>

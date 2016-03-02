@@ -71,7 +71,7 @@ class APIKeys {
 				return $cached;
 		}
 		
-		$sql = 'SELECT api_keys.view AS p_view, api_keys.orders AS p_orders, api_keys.withdraw AS p_withdraw FROM api_keys WHERE api_keys.key = "'.$api_key.'"';
+		$sql = 'SELECT api_keys.view AS p_view, api_keys.orders AS p_orders, api_keys.withdraw AS p_withdraw, api_keys.affiliate AS p_affiliate FROM api_keys WHERE api_keys.key = "'.$api_key.'"';
 		$result = db_query_array($sql);
 
 		if ($result) {

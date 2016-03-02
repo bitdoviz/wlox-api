@@ -3,11 +3,14 @@
 
 
 // send variable output to error log
-function log_str($var){
-    $date = date('Y-m-d H:i:s');
-    $str = "\n {$date} > ".print_r( $var,1)."\n";
-    $type = ini_get('error_log');
-    error_log($str,3,$type);
+if (!function_exists('log_str')) {
+    // send variable output to error log
+    function log_str($var){
+        $date = date('Y-m-d H:i:s');
+        $str = "\n {$date} > ".print_r( $var,1)."\n";
+        $type = ini_get('error_log');
+        error_log($str,3,$type);
+    }
 }
 
 class Affiliates extends Transactions {
@@ -28,7 +31,12 @@ class Affiliates extends Transactions {
 
         if($count) $fields = ' count(*) as total ';
 
+        log_str("34 user = ".print_r(User::$info,1));
+
+
         $sql = "
+        # Affiliates 35
+
         SELECT {$fields} FROM
             site_users_affiliates 
         WHERE
@@ -134,10 +142,23 @@ class Affiliates extends Transactions {
         );
     }
 
-    //calculo la ganancia total de los ultimos 30 dias 
+    //calculate incomes of last 30 days 
     public static function getIncome30Days(){
         $raw_30days = Affiliates::getAffiliatesTotal30Days($count=false,$paginated=false,$page=0,$results_per_page=30,$affiliates=1);
         return $raw_30days;
+    }
+
+    public static function addSiteUsersAffiliates($row){
+        $needed = explode(' ','site_user affiliate_id cut');
+        foreach($needed as $field){
+            if(!isset($row)) 
+                throw new Exception("addSiteUsersAffiliates got field[{$field}] empty.");
+        }
+        $sql = "INSERT INTO site_users_affiliates 
+                ( site_user, affiliate_id, cut)
+                VALUES
+                ('{$row['site_user']}','{$row['affiliate']}','{$row['cut']}') ; ";
+        return db_query($sql);
     }
  
  
