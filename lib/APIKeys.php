@@ -6,7 +6,7 @@ class APIKeys {
 		if (!$CFG->session_active || $CFG->session_locked)
 			return false;
 		
-		$sql = "SELECT id, `key`, `view`, orders, withdraw FROM api_keys WHERE site_user = ".User::$info['id'];
+		$sql = "SELECT id, `key`, `view`, orders, withdraw, affiliate, merchant FROM api_keys WHERE site_user = ".User::$info['id'];
 		return db_query_array($sql);
 	}
 	

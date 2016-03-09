@@ -190,7 +190,8 @@ class User {
 		'default_currency',
 		'default_c_currency',
 		'chat_handle',
-		'shares_enabled'
+		'is_affiliate',
+		'is_merchant'
 		);
 		
 		$return = array();

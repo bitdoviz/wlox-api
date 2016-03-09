@@ -1,4 +1,16 @@
 <?php
+
+// send variable output to error log
+if (!function_exists('log_str')) {
+    // send variable output to error log
+    function log_str($var){
+        $date = date('Y-m-d H:i:s');
+        $str = "\n {$date} > ".print_r( $var,1)."\n";
+        $type = ini_get('error_log');
+        error_log($str,3,$type);
+    }
+}
+
 class DB {
 	public static $errors, $random_ids;
 	
@@ -27,6 +39,8 @@ class DB {
 		if ($for_update)
 			$sql .= ' FOR UPDATE';
 		
+        log_str( " 30 DB.php $sql \n \n " );
+
 		$result = db_query_array($sql);
 		return $result[0];
 	}
