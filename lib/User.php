@@ -537,9 +537,7 @@ class User {
 	public static function registerNew($info) {
 
 		global $CFG;
-
-        log_str("\n\n\n User::registerNew recibe: ".print_r($info,1));
-
+		
 		if (!is_array($info))
 			return false;
 
@@ -574,15 +572,13 @@ class User {
 			$info['no_logins'] = 'Y';
 			$info['fee_schedule'] = $result[0]['id'];
 			$info['default_currency'] = preg_replace("/[^0-9]/", "",$info['default_currency']);
-			unset($info['terms']);
+			$info['default_c_currency'] = preg_replace("/[^0-9]/", "",$info['default_c_currency']);
 
             if(isset($info['nonce']))
                 unset($info['nonce']);
 
             if(isset($info['affiliate'])){
-
                 $cut =  (!empty($info['cut']) && $info['cut'] > 0) ? number_format(preg_replace("/[^0-9.]/", "",$info['cut']),8,'.','') : false;
-
                 $affiliate_row = array(
                     'affiliate' => preg_replace("/[^0-9]/",  '',$info['affiliate']),
                     'cut'       => $cut,
@@ -592,6 +588,12 @@ class User {
                 unset($info['cut']);
             } else {
                 $affiliate_row = false;
+            }
+            
+            $table_fields = DB::describeTable('site_users');
+            foreach ($info as $key => $value) {
+            	if (!in_array($key,$table_fields))
+            		unset($info[$key]);
             }
 
 			$record_id = db_insert('site_users',$info);
@@ -1037,17 +1039,17 @@ class User {
 		
 		$CFG->m->delete('on_hold_'.$user_id);
 	}
-}
-
-
-if (!function_exists('log_str')) {
-    // send variable output to error log
-    function log_str($var){
-        $date = date('Y-m-d H:i:s');
-        $str = "\n {$date} > ".print_r( $var,1)."\n";
-        $type = ini_get('error_log');
-        error_log($str,3,$type);
-    }
+	
+	public static function getIdFromAPIKey($api_key=false) {
+		if (!$api_key || strlen($api_key) != 16)
+			return false;
+		
+		$result = DB::getRecord('api_keys',0,$api_key,false,'key');
+		if ($result)
+			return $result['site_user'];
+		else
+			return false;
+	}
 }
 
 

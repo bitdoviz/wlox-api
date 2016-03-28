@@ -1,58 +1,22 @@
 <?php
-
-
-if (!function_exists('log_str')) {
-    // send variable output to error log
-    function log_str($var){
-        $date = date('Y-m-d H:i:s');
-        $str = "\n {$date} > ".print_r( $var,1)."\n";
-        $type = ini_get('error_log');
-        error_log($str,3,$type);
-    }
-}
-
 class Requests{
-
-    public static function getUserFromAPIKey($api_key){
-        $api_key = preg_replace("/[^0-9a-zA-Z]/","",$api_key) ;
-        $sql = "
-            SELECT 
-                site_users.user
-            FROM
-                site_users,
-                api_keys
-            WHERE
-                api_keys.key='{$api_key}' AND                    
-                api_keys.site_user = site_users.id
-            LIMIT 1
-        ";
-        $row = db_query_array($sql);
-        if(!$row) return false;
-        $user_id = $row['0']['user'];
-
-        if($user_id) 
-            return $user_id;
-
-        log_str("WARNING Requests::getUserFromAPIKey({$api_key}) INVALID USER");
-        return false;
-    }
-
-    public static function get($count=false,$page=false,$per_page=false,$withdrawals=false,$currency=false,$status=false,$public_api=false,$id=false,$btc_address1=false,$api_key=false,$age=false,$exclude_canceled=false) {
+    public static function get($count=false,$page=false,$per_page=false,$withdrawals=false,$currency=false,$status=false,$public_api=false,$id=false,$invoice_id=false) {
 		global $CFG;
 		
-        if($api_key){
-            $user_id = self::getUserFromAPIKey($api_key);
-        } else {
-		    if (!$CFG->session_active)
-			    return false;
-
-            $user_id = User::$info['id'];;
+		$invoice_id = preg_replace("/[^0-9a-zA-Z]/","",$invoice_id);
+		if (!$CFG->session_active && !$invoice_id)
+			return false;
+		
+        if (!$invoice_id)
+            $user_id = User::$info['id'];
+        else {
+        	$invoice_id = APIKeys::getInvoiceId($invoice_id);
+        	if (!$invoice_id)
+        		return false;
         }
 
-        if(!$user_id){
-            log_str('Requests.php::get user_id is empty.');
+        if(!$user_id)
             return false;
-        }		
 
 		$page = preg_replace("/[^0-9]/", "",$page);
 		$per_page = preg_replace("/[^0-9]/", "",$per_page);
@@ -64,7 +28,7 @@ class Requests{
 		$page = ($page > 0) ? $page - 1 : 0;
 		$r1 = $page * $per_page;
 		
-		if ($CFG->memcached && !$count && $public_api) {
+		if ($CFG->memcached && !$count && $public_api && !$invoice_id) {
 			$cached = $CFG->m->get('requests_u'.$user_id.(($type) ? '_t'.$type : '').(($currency) ? '_c'.$currency_info['id'] : '').(($status) ? '_s'.$status : '').(($id) ? '_i'.$id : '').(($per_page) ? '_l'.$per_page : ''));
 			if (is_array($cached)) {
 				if (!empty($cached))
@@ -97,7 +61,10 @@ class Requests{
 		FROM requests 
 		LEFT JOIN request_descriptions ON (request_descriptions.id = requests.description) 
 		LEFT JOIN request_status ON (request_status.id = requests.request_status)
-		WHERE 1 AND requests.site_user = ".$user_id;
+		WHERE 1 ";
+		
+		if (!$invoice_id)
+			$sql .= ' AND requests.site_user = '.$user_id.' ';
 		
 		if ($type > 0 && !($id > 0))
 			$sql .= " AND requests.request_type = $type ";
@@ -116,26 +83,16 @@ class Requests{
 			
 		if ($id > 0)
 			$sql .= " AND requests.id = $id ";
-
-        if($btc_address1)
-			$sql .= "\n AND requests.send_address = '{$btc_address1}' ";
-
-        // age in minutes
-        if($age)
-			$sql .= "\n AND requests.date >= (NOW() - INTERVAL {$age} MINUTE ) ";
-
-        if($exclude_canceled) // status] => CANCELED
-			$sql .= "\n AND requests.request_status !='CANCELED' ";
+		if ($invoice_id)
+			$sql .= ' AND requests.invoice_id = '.$invoice_id.' requests.request_status != '.$CFG->request_cancelled_id.' ';
+			//$sql .= " AND requests.date >= (DATE_ADD(NOW(), INTERVAL ".((($CFG->timezone_offset)/60)/60)." HOUR) - INTERVAL 15 MINUTE ) ";
 
 		if ($per_page > 0 && !$count)
 			$sql .= " ORDER BY requests.id DESC LIMIT $r1,$per_page ";
-
-
-        log_str("\n\n 123 Request query: ".$sql);
-
-		$result = db_query_array($sql);
 		
-		if ($CFG->memcached && !$count && $public_api) {
+		$result = db_query_array($sql);
+				
+		if ($CFG->memcached && !$count && $public_api && !$invoice_id) {
 			$result = ($result) ? $result : array();
 			$key = $user_id.(($type) ? '_t'.$type : '').(($currency) ? '_c'.$currency_info['id'] : '').(($status) ? '_s'.$status : '').(($id) ? '_i'.$id : '').(($per_page) ? '_l'.$per_page : '');
 			$CFG->m->set('requests_u'.$key,$result,60);
