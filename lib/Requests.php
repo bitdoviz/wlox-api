@@ -7,6 +7,7 @@ class Requests{
 		if (!$CFG->session_active && !$invoice_id)
 			return false;
 		
+		$user_id = false;
         if (!$invoice_id)
             $user_id = User::$info['id'];
         else {
@@ -14,9 +15,6 @@ class Requests{
         	if (!$invoice_id)
         		return false;
         }
-
-        if(!$user_id)
-            return false;
 
 		$page = preg_replace("/[^0-9]/", "",$page);
 		$per_page = preg_replace("/[^0-9]/", "",$per_page);
@@ -84,7 +82,7 @@ class Requests{
 		if ($id > 0)
 			$sql .= " AND requests.id = $id ";
 		if ($invoice_id)
-			$sql .= ' AND requests.invoice_id = '.$invoice_id.' requests.request_status != '.$CFG->request_cancelled_id.' ';
+			$sql .= ' AND requests.invoice_id = '.$invoice_id.' AND requests.request_status != '.$CFG->request_cancelled_id.' AND requests.send_address != "" ';
 			//$sql .= " AND requests.date >= (DATE_ADD(NOW(), INTERVAL ".((($CFG->timezone_offset)/60)/60)." HOUR) - INTERVAL 15 MINUTE ) ";
 
 		if ($per_page > 0 && !$count)
@@ -107,7 +105,7 @@ class Requests{
 			return $result[0]['total'];
 	}
 	
-	public static function insert($currency=false,$amount=false,$btc_address=false,$account_number=false) {
+	public static function insert($currency=false,$amount=false,$btc_address=false,$account_number=false,$invoice_id=false,$user_id=false) {
 		global $CFG;
 		
 		if (!$CFG->session_active)
@@ -131,6 +129,11 @@ class Requests{
 		if ($amount > $available[$currency_info['currency']])
 			return false;
 		
+		$invoice_id = preg_replace("/[^0-9a-zA-Z]/","",$invoice_id);
+		$invoice_id = APIKeys::getInvoiceId($invoice_id);
+		if (!$invoice_id)
+			return false;
+		
 		if ($is_crypto) {
 			if (((User::$info['verified_authy'] == 'Y'|| User::$info['verified_google'] == 'Y')) && User::$info['confirm_withdrawal_2fa_btc'] == 'Y' && !($CFG->token_verified || $CFG->session_api))
 				return false;
@@ -139,7 +142,7 @@ class Requests{
 
 			$wallet = Wallets::getWallet($currency);
 			$status = (User::$info['confirm_withdrawal_email_btc'] == 'Y' && !($CFG->token_verified || $CFG->session_api)) ? $CFG->request_awaiting_id : $CFG->request_pending_id;
-			$request_id = db_insert('requests',array('date'=>date('Y-m-d H:i:s'),'site_user'=>User::$info['id'],'currency'=>$currency,'amount'=>$amount,'description'=>$CFG->withdraw_btc_desc,'request_status'=>$status,'request_type'=>$CFG->request_withdrawal_id,'send_address'=>$btc_address,'fee'=>$wallet['bitcoin_sending_fee'],'net_amount'=>($amount - $wallet['bitcoin_sending_fee'])));
+			$request_id = db_insert('requests',array('date'=>date('Y-m-d H:i:s'),'site_user'=>User::$info['id'],'currency'=>$currency,'amount'=>$amount,'description'=>$CFG->withdraw_btc_desc,'request_status'=>$status,'request_type'=>$CFG->request_withdrawal_id,'send_address'=>$btc_address,'fee'=>$wallet['bitcoin_sending_fee'],'net_amount'=>($amount - $wallet['bitcoin_sending_fee']),'invoice_id'=>$invoice_id));
 			db_insert('history',array('date'=>date('Y-m-d H:i:s'),'ip'=>$CFG->client_ip,'history_action'=>$CFG->history_withdraw_id,'site_user'=>User::$info['id'],'request_id'=>$request_id,'bitcoin_address'=>$btc_address,'balance_before'=>User::$info[strtolower($currency_info['currency'])],'balance_after'=>(User::$info[strtolower($currency_info['currency'])] - $amount)));
 			
 			if (User::$info['confirm_withdrawal_email_btc'] == 'Y' && !($CFG->token_verified || $CFG->session_api) && $request_id > 0) {
@@ -168,7 +171,7 @@ class Requests{
 				return false;
 
 			$status = (User::$info['confirm_withdrawal_email_bank'] == 'Y' && !($CFG->token_verified || $CFG->session_api)) ? $CFG->request_awaiting_id : $CFG->request_pending_id;
-			$request_id = db_insert('requests',array('date'=>date('Y-m-d H:i:s'),'site_user'=>User::$info['id'],'currency'=>$currency,'amount'=>$amount,'description'=>$CFG->withdraw_fiat_desc,'request_status'=>$status,'request_type'=>$CFG->request_withdrawal_id,'account'=>$account_number,'fee'=>$CFG->fiat_withdraw_fee,'net_amount'=>($amount - $CFG->fiat_withdraw_fee)));
+			$request_id = db_insert('requests',array('date'=>date('Y-m-d H:i:s'),'site_user'=>User::$info['id'],'currency'=>$currency,'amount'=>$amount,'description'=>$CFG->withdraw_fiat_desc,'request_status'=>$status,'request_type'=>$CFG->request_withdrawal_id,'account'=>$account_number,'fee'=>$CFG->fiat_withdraw_fee,'net_amount'=>($amount - $CFG->fiat_withdraw_fee),'invoice_id'=>$invoice_id));
 			db_insert('history',array('date'=>date('Y-m-d H:i:s'),'ip'=>$CFG->client_ip,'history_action'=>$CFG->history_withdraw_id,'site_user'=>User::$info['id'],'request_id'=>$request_id,'balance_before'=>User::$info[strtolower($currency_info['currency'])],'balance_after'=>(User::$info[strtolower($currency_info['currency'])] - $amount)));
 			
 			if (User::$info['confirm_withdrawal_email_bank'] == 'Y' && !($CFG->token_verified || $CFG->session_api) && $request_id > 0) {

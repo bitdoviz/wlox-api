@@ -98,4 +98,33 @@ class Currencies {
 		}
 		return $not;
 	}
+	
+	public static function convertTo($amount,$from_currency,$to_currency,$fee_type=false) {
+		global $CFG;
+		
+		if (!($amount > 0))
+			return $amount;
+
+		if (!empty($CFG->currencies[$from_currency]))
+			$from_info = $CFG->currencies[$from_currency];
+		else
+			return $amount;
+	
+		if (!empty($CFG->currencies[$to_currency]))
+			$to_info = $CFG->currencies[$to_currency];
+		else
+			return $amount;
+	
+		if ($from_info['currency'] == $to_info['currency'])
+			return $amount;
+		
+		$markup = 0;
+		if ($fee_type == 'up')
+			$markup = 1;
+		else if ($fee_type == 'down')
+			$markup = -1;
+	
+		$conversion = ($from_info['currency'] == 'USD') ? $from_info['usd_ask'] : $from_info['usd_ask'] / $to_info['usd_ask'];
+		return round((($amount * $conversion) + (($amount * $conversion) * $CFG->currency_conversion_fee * $markup)),($to_info['is_crypto'] == 'Y' ? 8 : 2),PHP_ROUND_HALF_UP);
+	}
 }

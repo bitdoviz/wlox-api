@@ -603,7 +603,6 @@ class User {
                  $affiliate_row['affiliate']= User::getSiteUser($affiliate_row['affiliate']);
                  $affiliate_row['site_user']= $record_id;
 
-                 log_str("611 affiliate_row =".print_r($affiliate_row,1));
                  Affiliates::addSiteUsersAffiliates($affiliate_row);
             }
 		
@@ -629,8 +628,6 @@ class User {
         $sql = "SELECT {$fields} FROM site_users WHERE user = {$user} ";
 		$result = db_query_array($sql);
 
-        //log_str($sql." retorna: 636 ".print_r($result,1));
-		
 		if (!$result)
 			return false;
 		

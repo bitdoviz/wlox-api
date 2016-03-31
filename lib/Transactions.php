@@ -141,7 +141,6 @@ class Transactions {
             $affiliates = Affiliates::getAffiliates();
             $affiliates = implode(', ',$affiliates);
             $sql.="\n #get transactions from his affiliates \n AND ( (site_user IN($affiliates)) OR (site_user1 IN($affiliates)) ) \n ";
-            log_str($sql);
         }
 
 
@@ -149,9 +148,6 @@ class Transactions {
 			$sql .= " ORDER BY $order_by $order_desc LIMIT $r1,$per_page1 ";
 		if (!$count && $dont_paginate)
 			$sql .= " ORDER BY transactions.id DESC ";
-
-
-    //   log_str($sql);
 
 		$result = db_query_array($sql);
 		if ($CFG->memcached) {

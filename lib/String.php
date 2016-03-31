@@ -24,11 +24,17 @@ class String {
 			$dec_amount = (!is_numeric($crypto)) ? ($crypto ? 8 : 2) : $crypto;
 			
 			if ($flex) {
+				$amount = strval(number_format($amount,8,'.',''));
 				$flex = (!is_numeric($flex)) ? 8 : $flex;
 				$dec_detect = strlen(preg_replace("/[^0-9]/",'',strrchr($amount, "."))) - strlen(ltrim(preg_replace("/[^0-9]/",'',strrchr($amount, ".")),'0'));
+				
 				if (strrchr($amount, ".") > 0) {
-					$dec_amount = max($dec_amount,$dec_detect + 1);
-					$dec_amount = ($dec_amount > $flex) ? $flex : $dec_amount;
+					if ($dec_detect < 3) {
+						$dec_amount = max($dec_amount,$dec_detect + 2);
+						$dec_amount = ($dec_amount > $flex) ? $flex : $dec_amount;
+					}
+					else 
+						$dec_amount = $flex;
 				}
 			}
 		 

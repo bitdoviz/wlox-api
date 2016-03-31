@@ -74,18 +74,6 @@ if (class_exists('Memcached')) {
 	}
 }
 
-
-if (!function_exists('mb_strlen')) {
-    // send variable output to error log
-    function log_str($var){
-        $date = date('Y-m-d H:i:s');
-        $str = "\n {$date} > ".print_r( $var,1)."\n";
-        $type = ini_get('error_log');
-        error_log($str,3,$type);
-    }
-}
-
-
 if (!function_exists('getItemsByKey')) {
     // return array from a multiple array with deeps
     function getItemsByKey($array, $key)

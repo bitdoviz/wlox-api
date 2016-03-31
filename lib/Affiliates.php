@@ -1,18 +1,4 @@
 <?php
-
-
-
-// send variable output to error log
-if (!function_exists('log_str')) {
-    // send variable output to error log
-    function log_str($var){
-        $date = date('Y-m-d H:i:s');
-        $str = "\n {$date} > ".print_r( $var,1)."\n";
-        $type = ini_get('error_log');
-        error_log($str,3,$type);
-    }
-}
-
 class Affiliates extends Transactions {
 
     public function __construct($p=false){
@@ -30,8 +16,6 @@ class Affiliates extends Transactions {
         // TODO: INVERTIR LOS FIELDS PARA MATCHEAR
 
         if($count) $fields = ' count(*) as total ';
-
-        log_str("34 user = ".print_r(User::$info,1));
 
 
         $sql = "
@@ -73,7 +57,6 @@ class Affiliates extends Transactions {
  
         if($count){
              $sql = 'SELECT count(site_user) AS total FROM site_users_affiliates WHERE affiliate_id = "'.User::$info['id'].'" ';
-             //log_str("\n\n 68 >>>> ".$sql."\n\n");
              return db_query_array($sql);
         }  
 
@@ -103,7 +86,6 @@ class Affiliates extends Transactions {
             $sql.="\n # add pagination \n LIMIT $start_from,{$results_per_page}";
         }
 
-        log_str($sql);
         return db_query_array($sql);
     }
 
