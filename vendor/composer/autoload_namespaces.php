@@ -6,9 +6,4 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Omnipay\\Skrill\\' => array($vendorDir . '/alfaproject/omnipay-skrill/src'),
-    'Omnipay\\Ecopayz\\' => array($vendorDir . '/dercoder/omnipay-ecopayz/src'),
-    'Omnipay\\Common\\' => array($vendorDir . '/omnipay/common/src'),
-    'Guzzle\\Tests' => array($vendorDir . '/guzzle/guzzle/tests'),
-    'Guzzle' => array($vendorDir . '/guzzle/guzzle/src'),
 );
