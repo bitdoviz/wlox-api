@@ -26,7 +26,10 @@ class AstroPayCard {
     //Sandbox (TODO: Change to false in production)
     private $sandbox = true;
     
-    public function __construct() {
+    public function __construct($x_login,$x_trans_key) {
+    	$this->x_login = $x_login;
+    	$this->x_trans_key = $x_trans_key;
+    	
         if($this->sandbox){
             $this->validator_url = "$this->sandbox_base_url$this->validator_url";
             $this->transtatus_url = "$this->sandbox_base_url$this->transtatus_url";

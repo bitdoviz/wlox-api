@@ -54,7 +54,9 @@ class Astropay extends GatewayBase {
                 $this->validate($p);
 
                 //AstroPayCard class instance
-                $ap = new AstroPayCard();
+                $ap = new AstroPayCard($p['x_login'],$p['x_trans_key']);
+                unset($p['x_login']);
+                unset($p['x_trans_key']);
 
                 //Making an AUTH_CAPTURE transaction, this method response has the result
                 $raw_response = $ap->auth_capture_transaction($p['x_card_num'], $p['x_card_code'], $p['x_exp_date'], $p['x_amount'], $p['x_unique_id'], $p['x_invoice_num']);

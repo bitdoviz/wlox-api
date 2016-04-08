@@ -64,8 +64,12 @@ class Paysafecard extends GatewayBase {
 
         return $errors;
     }
+    
+    function pay($params=false){
+    	
+    }
 
-    function pay($params=false,$timeout=false){
+    function prepare($params=false){
 
            $result = false;
            $errors = false;

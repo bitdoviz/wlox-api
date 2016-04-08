@@ -99,6 +99,28 @@ class GatewayBase {
 
         return implode("\n",$out);
     }
+    
+    function isXML($xmlstr) {
+    	libxml_use_internal_errors(true);
+    	$doc = simplexml_load_string($xmlstr);
+ 
+    	if (!$doc) {
+    		$errors_detected = libxml_get_errors();
+    		$errors = array();
+    		
+    		//foreach ($errors_detected as $error) {
+    			//$errors[] = display_xml_error($error, $xml);
+    		//}
+    		
+    		//if (count($errors) > 0)
+    			//trigger_error(print_r($errors,1));
+    		
+    		libxml_clear_errors();
+    		return false;
+    	}
+    	else
+    		return @json_decode(@json_encode($doc),1);
+    }
 
 
     // @param txt(string) request
@@ -112,18 +134,22 @@ class GatewayBase {
             'errors'   => false,
             'warnings' => false,
         );
-
-        if($clean)
+        
+        $txt_original = $txt;
+        $xml = self::isXML($txt);
+        if ($xml)
+        	$txt = $xml;
+      	else if($clean)
             $txt = $this->cleanHTML($txt);
 
         foreach($errors as $e)
-            if(stristr($txt,$e)){
+            if(stristr($txt_original,$e)){
                 $status['errors']=true;
                 break;
             }
 
         foreach($warnings as $w)
-            if(stristr($txt,$w)){
+            if(stristr($txt_original,$w)){
                 $status['warnings']=true;
                 break;
             }

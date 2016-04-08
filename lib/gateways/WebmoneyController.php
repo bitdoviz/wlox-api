@@ -1,13 +1,9 @@
 <?
-use baibaratsky\WebMoney;
-use baibaratsky\WebMoney\Api\X\X9\Request;
-use baibaratsky\WebMoney\Api\X\X9\Response;
-use baibaratsky\WebMoney\Request\Requester\CurlRequester;
+use baibaratsky\WebMoney\WebMoney;
 use baibaratsky\WebMoney\Signer;
+use baibaratsky\WebMoney\Request\Requester\CurlRequester;
+use baibaratsky\WebMoney\Api\X\X2;
 
-
-// https://gist.github.com/tianlim/5887436
-// http://www.peopleperhour.com/job/skrill-moneybookers-payment-gateway-php-wrapper-no-integ-778332
 class WebmoneyController extends GatewayBase {
 
     public function __construct(){
@@ -15,18 +11,18 @@ class WebmoneyController extends GatewayBase {
     }
 
     public function validate($params){
+    	/*
         $req_fields = explode(' ','signer_wmid requester_id signer key_file_path key_file_password name');
 
         foreach($req_fields as $f){
             if(empty($params[$f]))
                 throw new Exception("param {$f} is empty.Params required:".print_r($req_fields,1)); 
         }
-
+		*/
         return $params;
     }
 
     function test(){
-        //<form action="https://www.moneybookers.com/app/payment.pl" method="post",
         $params = array (
             "signer_wmid" => "444465751111",
             "requester_id" => "23423423424323",
@@ -38,15 +34,29 @@ class WebmoneyController extends GatewayBase {
         return $this->pay($params);
     }
 
-    // @param p array with params 
+    // the 
     function pay($p){
 
         $errors = false;
         $result = false;
         
         try {
-
             $this->validate($p);
+            $data_string = json_encode($p);
+             
+            $ch = curl_init('https://merchant.webmoney.ru/conf/xml/XMLTransRequest.asp');
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($data_string))
+            );
+             
+            $result = curl_exec($ch);
+            
+            
+            
 
             // If you don’t want to use the WM root certificate to protect against DNS spoofing, pass false to the CurlRequester constructor
             $webMoney = new WebMoney\WebMoney(new CurlRequester);

@@ -536,7 +536,6 @@ class User {
 	}
 	
 	public static function registerNew($info) {
-
 		global $CFG;
 		
 		if (!is_array($info))
@@ -551,8 +550,8 @@ class User {
 			return false;
 		}
 
-		$new_id = self::getNewId();
-		if ($new_id > 0) {
+		//$new_id = self::getNewId();
+		//if ($new_id > 0) {
 			$sql = 'SELECT id FROM fee_schedule ORDER BY from_usd ASC LIMIT 0,1';
 			$result = db_query_array($sql);
 			
@@ -560,7 +559,7 @@ class User {
 			$info['first_name'] = preg_replace("/[^\pL a-zA-Z0-9@\s\._-]/u", "",$info['first_name']);
 			$info['last_name'] = preg_replace("/[^\pL a-zA-Z0-9@\s\._-]/u", "",$info['last_name']);
 			$info['country'] = preg_replace("/[^0-9]/", "",$info['country']);
-			$info['user'] = $new_id;
+			$info['user'] = $info['email'];
 			$info['pass'] = Encryption::hash($pass1);
 			$info['date'] = date('Y-m-d H:i:s');
 			$info['confirm_withdrawal_email_btc'] = 'Y';
@@ -578,6 +577,7 @@ class User {
             if(isset($info['nonce']))
                 unset($info['nonce']);
 
+            /*
             if(isset($info['affiliate'])){
                 $cut =  (!empty($info['cut']) && $info['cut'] > 0) ? number_format(preg_replace("/[^0-9.]/", "",$info['cut']),8,'.','') : false;
                 $affiliate_row = array(
@@ -590,6 +590,7 @@ class User {
             } else {
                 $affiliate_row = false;
             }
+            */
             
             $table_fields = DB::describeTable('site_users');
             foreach ($info as $key => $value) {
@@ -598,13 +599,14 @@ class User {
             }
 
 			$record_id = db_insert('site_users',$info);
-
+			/*
             if($record_id && is_array($affiliate_row)){
                  $affiliate_row['affiliate']= User::getSiteUser($affiliate_row['affiliate']);
                  $affiliate_row['site_user']= $record_id;
 
                  Affiliates::addSiteUsersAffiliates($affiliate_row);
             }
+            */
 		
 			require_once('../lib/easybitcoin.php');
 			$bitcoin = new Bitcoin($CFG->bitcoin_username,$CFG->bitcoin_passphrase,$CFG->bitcoin_host,$CFG->bitcoin_port,$CFG->bitcoin_protocol);
@@ -621,7 +623,7 @@ class User {
 				Email::send($CFG->form_email,$CFG->support_email,$email['title'],$CFG->form_email_from,false,$email['content'],$info);
 			}
 			return true;
-		}
+		//}
 	}
 
     public static function getSiteUser($user,$fields = 'id'){
@@ -747,6 +749,7 @@ class User {
 		//$update['last_name'] = preg_replace("/[^\pL a-zA-Z0-9@\s\._-]/u", "",$info['last_name']);
 		//$update['country'] = preg_replace("/[^0-9]/", "",$info['country']);
 		$update['email'] = preg_replace("/[^0-9a-zA-Z@\.\!#\$%\&\*+_\~\?\-]/", "",$info['email']);
+		$update['user'] = $update['email'];
 		$update['default_currency'] = preg_replace("/[^0-9]/", "",$info['default_currency']);
 		$update['default_c_currency'] = preg_replace("/[^0-9]/", "",$info['default_c_currency']);
 		$update['chat_handle'] = preg_replace("/[^\pL a-zA-Z0-9@\s\._-]/u", "",$info['chat_handle']);

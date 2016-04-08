@@ -1,6 +1,4 @@
 <?php
-error_reporting(E_ALL);
-
 class SOPGClassicMerchantClient
 {
     var $log;
