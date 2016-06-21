@@ -16,10 +16,8 @@ class Lang {
 		if ($result) {
 			foreach ($result as $row) {
 				$key = $row['key'];
-				$lang_table[$key]['es'] = str_replace('[exchange_name]',$CFG->exchange_name,str_replace('[baseurl]',$CFG->frontend_baseurl,$row['esp']));
+				$lang_table[$key]['tr'] = str_replace('[exchange_name]',$CFG->exchange_name,str_replace('[baseurl]',$CFG->frontend_baseurl,$row['tr']));
 				$lang_table[$key]['en'] = str_replace('[exchange_name]',$CFG->exchange_name,str_replace('[baseurl]',$CFG->frontend_baseurl,$row['eng']));
-				$lang_table[$key]['ru'] = str_replace('[exchange_name]',$CFG->exchange_name,str_replace('[baseurl]',$CFG->frontend_baseurl,$row['ru']));
-				$lang_table[$key]['zh'] = str_replace('[exchange_name]',$CFG->exchange_name,str_replace('[baseurl]',$CFG->frontend_baseurl,$row['zh']));
 			}
 
 			if ($CFG->memcached)
